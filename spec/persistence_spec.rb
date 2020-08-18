@@ -32,6 +32,71 @@ RSpec.describe "persistence" do
     expect(employee.data.first_name).to eq("Jane")
   end
 
+  context "creating with id" do
+    let(:payload) do
+      {
+        data: {
+          type: "employees",
+          id: 12345,
+          attributes: {first_name: "Jane"}
+        }
+      }
+    end
+
+    subject(:employee) do
+      proxy = klass.build(payload)
+      proxy.save
+      proxy.data
+    end
+
+    it "works" do
+      expect(employee.id).to eq(12345)
+      expect(employee.first_name).to eq("Jane")
+    end
+
+    context "with non-writable id" do
+      before do
+        klass.attribute(:id, :integer, writable: false)
+      end
+
+      it "is not allowed" do
+        expect {
+          employee
+        }.to(raise_error { |e|
+          expect(e).to be_a Graphiti::Errors::InvalidRequest
+          expect(e.errors.full_messages).to eq ["data.attributes.id cannot be written"]
+        })
+      end
+    end
+  end
+
+  context "updating with non-writable id" do
+    let(:payload) do
+      {
+        data: {
+          type: "employees",
+          id: 12345,
+          attributes: {first_name: "Jane"}
+        }
+      }
+    end
+
+    subject(:employee) do
+      proxy = klass.build(payload)
+      proxy.save
+      proxy.data
+    end
+
+    before do
+      klass.attribute(:id, :integer, writable: false)
+      PORO::DB.data[:employees] << {id: 12345, first_name: "Joe"}
+    end
+
+    it "can modify attributes" do
+      expect(employee.first_name).to eq("Jane")
+    end
+  end
+
   describe "overrides" do
     before do
       klass.class_eval do
