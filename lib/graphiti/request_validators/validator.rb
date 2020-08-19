@@ -67,7 +67,7 @@ module Graphiti
       end
 
       def typecast_attributes(resource, attributes, payload_path)
-        attributes.each_pair do |key, value|
+        attributes.except(:id).each_pair do |key, value|
           begin
             attributes[key] = resource.typecast(key, value, :writable)
           rescue Graphiti::Errors::UnknownAttribute
